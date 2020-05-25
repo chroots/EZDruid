@@ -1,7 +1,7 @@
 local GetSpellBonusHealing, UnitPower, UnitHealthMax, UnitHealth, CreateFrame, C_Timer, InCombatLockdown, GetTime = GetSpellBonusHealing, UnitPower, UnitHealthMax, UnitHealth, CreateFrame, C_Timer, InCombatLockdown, GetTime
 local LGF = LibStub("LibGetFrame-1.0")
 local GetUnitFrame = LGF.GetUnitFrame
-if select(2, UnitClass("player")) ~= "PRIEST" then return end
+if select(2, UnitClass("player")) ~= "DRUID" then return end
 local debug = false
 
 local print_debug = function(...)
@@ -11,30 +11,22 @@ local print_debug = function(...)
 end
 
 local greater = {
-    { name = "H1", cost = 132, spellId = 2054, baseCastTime = 3 },
-    { name = "H2", cost = 174, spellId = 2055, baseCastTime = 3 },
-    { name = "H3", cost = 217, spellId = 6063, baseCastTime = 3 },
-    { name = "H4", cost = 259, spellId = 6064, baseCastTime = 3 },
-    { name = "GH1", cost = 314, spellId = 2060, baseCastTime = 3 },
-    { name = "GH2", cost = 387, spellId = 10963, baseCastTime = 3 },
-    { name = "GH3", cost = 463, spellId = 10964, baseCastTime = 3 },
-    { name = "GH4", cost = 557, spellId = 10965, baseCastTime = 3 },
-}
-
-local flash = {
-    { name = "F1", cost = 125, spellId = 2061, baseCastTime = 1.5 },
-    { name = "F2", cost = 155, spellId = 9472, baseCastTime = 1.5 },
-    { name = "F3", cost = 185, spellId = 9473, baseCastTime = 1.5 },
-    { name = "F4", cost = 215, spellId = 9474, baseCastTime = 1.5 },
-    { name = "F5", cost = 265, spellId = 10915, baseCastTime = 1.5 },
-    { name = "F6", cost = 315, spellId = 10916, baseCastTime = 1.5 },
-    { name = "F7", cost = 380, spellId = 10917, baseCastTime = 1.5 },
+    { name = "HT1", cost = 25, spellId = 5185, baseCastTime = 3 },
+    { name = "HT2", cost = 55, spellId = 5186, baseCastTime = 3 },
+    { name = "HT3", cost = 110, spellId = 5187, baseCastTime = 3 },
+    { name = "HT4", cost = 185, spellId = 5188, baseCastTime = 3 },
+    { name = "HT5", cost = 270, spellId = 5189, baseCastTime = 3 },
+    { name = "HT6", cost = 335, spellId = 6778, baseCastTime = 3 },
+    { name = "HT7", cost = 405, spellId = 8903, baseCastTime = 3 },
+    { name = "HT8", cost = 495, spellId = 9758, baseCastTime = 3 },
+    { name = "HT9", cost = 600, spellId = 9888, baseCastTime = 3 },
+    { name = "HT10", cost = 720, spellId = 9889, baseCastTime = 3 },
 }
 
 local hiddenTooltip
 local function GetHiddenTooltip()
   if not hiddenTooltip then
-    hiddenTooltip = CreateFrame("GameTooltip", "EZPriestTooltip", nil, "GameTooltipTemplate")
+    hiddenTooltip = CreateFrame("GameTooltip", "EZDruidTooltip", nil, "GameTooltipTemplate")
     hiddenTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
     hiddenTooltip:AddFontStrings(
       hiddenTooltip:CreateFontString("$parentTextLeft1", nil, "GameTooltipText"),
@@ -54,17 +46,12 @@ local function getMinMax(spellId)
 end
 
 local buttons = {}
-local shift = false
 local healingPower, mana
 
 local maxCost = 0
 for _, spell in pairs(greater) do
     if spell.cost > maxCost then maxCost = spell.cost end
 end
-for _, spell in pairs(flash) do
-    if spell.cost > maxCost then maxCost = spell.cost end
-end
-
 
 local f = CreateFrame("Frame")
 
@@ -109,15 +96,13 @@ local buttonHide = function(button)
     button:SetAttribute("unit", nil)
     button:SetAttribute("type1", nil)
     button:SetAttribute("spell1", nil)
-    button:SetAttribute("shift-type1", nil)
-    button:SetAttribute("shift-spell1", nil)
 end
 
 local alpha = 0.3
 
 local updateUnitColor = function(unit)
     print_debug("updateUnitColor", unit)
-    local activeSpells = shift and greater or flash
+    local activeSpells = greater
     local deficit = UnitHealthMax(unit) - UnitHealth(unit)
     local bestFound
     for i = 8, 1, -1 do
@@ -185,7 +170,7 @@ local InitSquares = function()
                 local buttonName = unit.."-"..i
                 local button = buttons[buttonName]
                 if not button then
-                    button = CreateFrame("Button", "EZPRIEST_BUTTON"..buttonName, f, "SecureActionButtonTemplate")
+                    button = CreateFrame("Button", "EZDRUID_BUTTON"..buttonName, f, "SecureActionButtonTemplate")
                     button:SetFrameStrata("DIALOG")
                     buttons[buttonName] = button
                     button.texture = button:CreateTexture(nil, "DIALOG")
@@ -193,9 +178,7 @@ local InitSquares = function()
                 end
                 button:SetAttribute("unit", unit)
                 button:SetAttribute("type1", "spell")
-                button:SetAttribute("spell1", flash[i] and flash[i].spellId)
-                button:SetAttribute("shift-type1", "spell")
-                button:SetAttribute("shift-spell1", greater[i] and greater[i].spellId)
+                button:SetAttribute("spell1", greater[i] and greater[i].spellId)
                 button:SetSize(ssize, ssize)
                 button.texture:SetColorTexture(1, 0, 0, 0)
                 button:SetPoint("TOPLEFT", frame, "TOPLEFT", x, y)
@@ -232,22 +215,14 @@ end)
 
 function f:ADDON_LOADED(event, addonName)
     print_debug(event, addonName)
-    if addonName == "EZPriest" then
+    if addonName == "EZDruid" then
         DelayedUpdate()
     end
 end
 
-LGF.RegisterCallback("EZPriest", "GETFRAME_REFRESH", function()
+LGF.RegisterCallback("EZDruid", "GETFRAME_REFRESH", function()
     Update()
-end)
-
-function f:MODIFIER_STATE_CHANGED(event, key, state)
-    if key == "LSHIFT" or key == "RSHIFT" then
-        print_debug(event)
-        shift = state == 1
-        updateStats()
-        updateAllUnitColor()
-    end
+    end)
 end
 
 function f:UNIT_HEALTH_FREQUENT(event, unit)
